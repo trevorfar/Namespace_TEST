@@ -1,0 +1,50 @@
+name: probe
+
+# One-off checks of Namespace runner behaviour. Runs only when this file changes.
+on:
+  push:
+    paths:
+      - .github/workflows/probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # Does the profile's custom base image (Dockerfile adding /opt/ci-venv) apply?
+  image-check:
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
+    steps:
+      - run: |
+          echo "::notice title=image-check::/opt: $(ls /opt | tr '\n' ' ') | ci-venv: $([ -d /opt/ci-venv ] && echo present || echo absent)"
+
+  # Does nsc's default (table) output work inside a CI job, which has no TTY?
+  nsc-no-tty:
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
+    steps:
+      - uses: namespacelabs/nscloud-setup@v0
+      - run: |
+          set +e
+          nsc version | head -1
+          plain=$(nsc instance history 2>&1); plain_rc=$?
+          json=$(nsc instance history -o json 2>&1); json_rc=$?
+          echo "plain rc=$plain_rc: $plain"
+          echo "json rc=$json_rc"
+          echo "::notice title=nsc-no-tty::tty=$([ -t 0 ] && echo yes || echo no) plain_rc=$plain_rc json_rc=$json_rc plain_output=$(echo "$plain" | grep -m1 -E 'Failed|Instance ID' )"
+
+  # Are a fast-failing job's step logs retained by `nsc logs`?
+  fast-fail:
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
+    steps:
+      - run: |
+          echo "PROBE-MARKER-FASTFAIL-${{ github.run_id }}"
+          exit 1
+
+  # Control: the same marker from a job that runs for about a minute.
+  slow-ok:
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
+    steps:
+      - run: |
+          echo "PROBE-MARKER-SLOW-${{ github.run_id }}"
+          sleep 60
