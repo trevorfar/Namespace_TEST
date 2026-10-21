@@ -4,8 +4,12 @@ on:
   push:
   workflow_dispatch:
 
+# Both jobs cache the fully installed virtualenv (~1.5 GB), so a warm run
+# skips installing packages. The difference is where that cache lives:
+# GitHub downloads and unpacks it on every run, while Namespace keeps it on
+# a cache volume that is already attached to the runner.
 jobs:
-  # Baseline: GitHub's standard runner, using GitHub's own pip cache.
+  # Baseline: GitHub's standard runner with actions/cache.
   github:
     runs-on: ubuntu-latest
     steps:
@@ -13,14 +17,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-ci.txt
-      - run: pip install -r requirements-ci.txt
-      - run: pytest -v
+      - uses: actions/cache@v4
+        with:
+          path: ~/.venv
+          key: venv-${{ runner.os }}-py3.12-${{ hashFiles('requirements-ci.txt') }}
+      - name: Install dependencies
+        run: |
+          [ -x ~/.venv/bin/python ] || python -m venv ~/.venv
+          ~/.venv/bin/pip install -r requirements-ci.txt
+      - run: ~/.venv/bin/pytest -v
 
-  # Same work on a Namespace runner with a persistent cache volume.
+  # Same work on a Namespace runner. Requires a cache volume on the profile.
   namespace:
-    runs-on: namespace-profile-benchmark
+    runs-on: namespace-profile-bench
     steps:
       - uses: namespacelabs/nscloud-checkout-action@v8
       - uses: actions/setup-python@v5
@@ -28,6 +37,9 @@ jobs:
           python-version: "3.12"
       - uses: namespacelabs/nscloud-cache-action@v1
         with:
-          path: ~/.cache/pip
-      - run: pip install -r requirements-ci.txt
-      - run: pytest -v
+          path: ~/.venv
+      - name: Install dependencies
+        run: |
+          [ -x ~/.venv/bin/python ] || python -m venv ~/.venv
+          ~/.venv/bin/pip install -r requirements-ci.txt
+      - run: ~/.venv/bin/pytest -v
