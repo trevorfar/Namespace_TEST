@@ -4,10 +4,16 @@ on:
   push:
   workflow_dispatch:
 
-# Both jobs cache the fully installed virtualenv (~1.5 GB), so a warm run
-# skips installing packages. The difference is where that cache lives:
-# GitHub downloads and unpacks it on every run, while Namespace keeps it on
-# a cache volume that is already attached to the runner.
+# The github and namespace jobs cache the fully installed virtualenv (~1.5 GB),
+# so a warm run skips installing packages. The difference is where that cache
+# lives: GitHub downloads and unpacks it on every run, while Namespace keeps it
+# on a cache volume that is already attached to the runner.
+#
+# The namespace-baked job skips caching entirely: the same venv is baked into
+# the profile's custom base image (ci/runner.Dockerfile) at /opt/ci-venv.
+#
+# Namespace runners pin github.run-id so a spare runner left over from an
+# earlier run (with an older cache fork) can't pick up this run's jobs.
 jobs:
   # Baseline: GitHub's standard runner with actions/cache.
   github:
@@ -29,7 +35,7 @@ jobs:
 
   # Same work on a Namespace runner. Requires a cache volume on the profile.
   namespace:
-    runs-on: namespace-profile-benchmark
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
     steps:
       - uses: namespacelabs/nscloud-checkout-action@v8
       - uses: actions/setup-python@v5
@@ -43,3 +49,14 @@ jobs:
           [ -x ~/.venv/bin/python ] || python -m venv ~/.venv
           ~/.venv/bin/pip install -r requirements-ci.txt
       - run: ~/.venv/bin/pytest -v
+
+  # Same work with the dependencies baked into the runner image.
+  namespace-baked:
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
+    steps:
+      - uses: namespacelabs/nscloud-checkout-action@v8
+      # Should report "Requirement already satisfied"; installs only if
+      # requirements-ci.txt changed since the image was last built.
+      - name: Install dependencies
+        run: /opt/ci-venv/bin/pip install -r requirements-ci.txt
+      - run: /opt/ci-venv/bin/pytest -v
