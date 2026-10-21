@@ -52,8 +52,7 @@ jobs:
 
   # Same work with the dependencies baked into the runner image.
   namespace-baked:
-    # Temporary: plain label, to test whether the run-id override skips the custom image.
-    runs-on: namespace-profile-benchmark
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
     steps:
       - uses: namespacelabs/nscloud-checkout-action@v8
       # Temporary: confirm the runner booted the custom base image.
