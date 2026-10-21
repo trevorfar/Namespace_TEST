@@ -55,6 +55,11 @@ jobs:
     runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
     steps:
       - uses: namespacelabs/nscloud-checkout-action@v8
+      # Temporary: confirm the runner booted the custom base image.
+      - name: Show runner image
+        run: |
+          echo "ImageOS=$ImageOS ImageVersion=$ImageVersion"
+          ls -la /opt
       # Should report "Requirement already satisfied"; installs only if
       # requirements-ci.txt changed since the image was last built.
       - name: Install dependencies
