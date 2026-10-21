@@ -58,8 +58,7 @@ jobs:
       # Temporary: confirm the runner booted the custom base image.
       - name: Show runner image
         run: |
-          echo "ImageOS=$ImageOS ImageVersion=$ImageVersion"
-          ls -la /opt
+          echo "::notice title=runner image::ImageOS=$ImageOS ImageVersion=$ImageVersion /opt: $(ls /opt | tr '\n' ' ')"
       # Should report "Requirement already satisfied"; installs only if
       # requirements-ci.txt changed since the image was last built.
       - name: Install dependencies
