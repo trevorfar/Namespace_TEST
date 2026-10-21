@@ -1,0 +1,10 @@
+# Deliberately heavy dependencies so dependency install time dominates CI,
+# which is where Namespace's cache volumes make a visible difference.
+--extra-index-url https://download.pytorch.org/whl/cpu
+pytest
+torch
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib

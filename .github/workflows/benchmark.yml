@@ -1,0 +1,33 @@
+name: benchmark
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  # Baseline: GitHub's standard runner, using GitHub's own pip cache.
+  github:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: pip install -r requirements-ci.txt
+      - run: pytest -v
+
+  # Same work on a Namespace runner with a persistent cache volume.
+  namespace:
+    runs-on: namespace-profile-bench
+    steps:
+      - uses: namespacelabs/nscloud-checkout-action@v8
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          path: ~/.cache/pip
+      - run: pip install -r requirements-ci.txt
+      - run: pytest -v
