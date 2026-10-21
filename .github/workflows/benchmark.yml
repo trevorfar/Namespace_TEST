@@ -20,7 +20,7 @@ jobs:
 
   # Same work on a Namespace runner with a persistent cache volume.
   namespace:
-    runs-on: namespace-profile-bench
+    runs-on: namespace-profile-benchmark
     steps:
       - uses: namespacelabs/nscloud-checkout-action@v8
       - uses: actions/setup-python@v5
