@@ -1,0 +1,16 @@
+name: spare-repro
+#Proving pinned jobs get an extraneous spare runner, which doesn't make sense from an architectural pov:
+# a job pinned to a specific runid should only be able to run that runid, and extra runners who dont have run_id's assosciated
+# will not be able to pick up a pinned job
+#   python3 scripts/spare_check.py <run id>
+on:
+  workflow_dispatch:
+
+jobs:
+  pinned:
+    strategy:
+      matrix:
+        n: [1, 2, 3]
+    runs-on: namespace-profile-benchmark;github.run-id=${{ github.run_id }}
+    steps:
+      - run: sleep 30
